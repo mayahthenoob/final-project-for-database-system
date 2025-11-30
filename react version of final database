@@ -1,0 +1,588 @@
+import React, { useState } from 'react';
+import { ChevronDown, ChevronRight, Database, Table, FileText, Search } from 'lucide-react';
+
+const SpiceIsleToursDB = () => {
+  const [activeTab, setActiveTab] = useState('normalization');
+  const [expandedSections, setExpandedSections] = useState({});
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const normalizationSteps = {
+    "1NF": {
+      title: "First Normal Form (1NF)",
+      description: "Eliminate repeating groups and ensure atomic values",
+      tables: [
+        "Tours (TourID, TourName, Length, Fee)",
+        "Locations (LocationID, Name, Type, Address, Description)",
+        "Guides (EmployeeID, Name, Address, DateOfHire)",
+        "Clients (ClientID, Name, Phone, Email)",
+        "Outings (OutingID, Date, Time)"
+      ]
+    },
+    "2NF": {
+      title: "Second Normal Form (2NF)",
+      description: "Remove partial dependencies (all non-key attributes fully dependent on primary key)",
+      tables: [
+        "All tables from 1NF satisfy 2NF",
+        "Added junction tables for many-to-many relationships:",
+        "TourLocations (TourID, LocationID, VisitOrder)",
+        "Certifications (EmployeeID, LocationID, CertificationDate, ExpiryDate)",
+        "OutingClients (OutingID, ClientID, Rating, Review)"
+      ]
+    },
+    "3NF": {
+      title: "Third Normal Form (3NF)",
+      description: "Remove transitive dependencies",
+      tables: [
+        "All tables already satisfy 3NF",
+        "No transitive dependencies exist",
+        "ExpiryDate in Certifications is calculated (CertificationDate + 3 years) but stored for query efficiency"
+      ]
+    }
+  };
+
+  const tables = [
+    {
+      name: "Tours",
+      columns: [
+        { name: "TourID", type: "INT", pk: true, description: "Primary Key" },
+        { name: "TourName", type: "VARCHAR(100)", description: "Name of the tour" },
+        { name: "ApproxLength", type: "DECIMAL(4,2)", description: "Length in hours" },
+        { name: "Fee", type: "DECIMAL(10,2)", description: "Tour fee in USD" }
+      ]
+    },
+    {
+      name: "Locations",
+      columns: [
+        { name: "LocationID", type: "INT", pk: true, description: "Primary Key" },
+        { name: "LocationName", type: "VARCHAR(100)", description: "Name of location" },
+        { name: "LocationType", type: "VARCHAR(50)", description: "Type (Beach, Waterfall, etc.)" },
+        { name: "Address", type: "VARCHAR(200)", description: "Physical address" },
+        { name: "OfficialDescription", type: "TEXT", description: "Official description" }
+      ]
+    },
+    {
+      name: "Guides",
+      columns: [
+        { name: "EmployeeID", type: "INT", pk: true, description: "Primary Key" },
+        { name: "GuideName", type: "VARCHAR(100)", description: "Full name" },
+        { name: "HomeAddress", type: "VARCHAR(200)", description: "Home address" },
+        { name: "DateOfHire", type: "DATE", description: "Date hired" }
+      ]
+    },
+    {
+      name: "Clients",
+      columns: [
+        { name: "ClientID", type: "INT", pk: true, description: "Primary Key" },
+        { name: "ClientName", type: "VARCHAR(100)", description: "Full name" },
+        { name: "Phone", type: "VARCHAR(20)", description: "Contact number" },
+        { name: "Email", type: "VARCHAR(100)", description: "Email address" }
+      ]
+    },
+    {
+      name: "TourLocations",
+      columns: [
+        { name: "TourID", type: "INT", pk: true, fk: "Tours(TourID)", description: "Foreign Key" },
+        { name: "LocationID", type: "INT", pk: true, fk: "Locations(LocationID)", description: "Foreign Key" },
+        { name: "VisitOrder", type: "INT", description: "Order of visit (1, 2, 3...)" }
+      ]
+    },
+    {
+      name: "Certifications",
+      columns: [
+        { name: "EmployeeID", type: "INT", pk: true, fk: "Guides(EmployeeID)", description: "Foreign Key" },
+        { name: "LocationID", type: "INT", pk: true, fk: "Locations(LocationID)", description: "Foreign Key" },
+        { name: "CertificationDate", type: "DATE", description: "Date certified" },
+        { name: "ExpiryDate", type: "DATE", description: "Certification expiry date" }
+      ]
+    },
+    {
+      name: "Outings",
+      columns: [
+        { name: "OutingID", type: "INT", pk: true, description: "Primary Key" },
+        { name: "TourID", type: "INT", fk: "Tours(TourID)", description: "Foreign Key" },
+        { name: "EmployeeID", type: "INT", fk: "Guides(EmployeeID)", description: "Foreign Key (Guide)" },
+        { name: "OutingDate", type: "DATE", description: "Date of outing" },
+        { name: "OutingTime", type: "TIME", description: "Start time" }
+      ]
+    },
+    {
+      name: "OutingClients",
+      columns: [
+        { name: "OutingID", type: "INT", pk: true, fk: "Outings(OutingID)", description: "Foreign Key" },
+        { name: "ClientID", type: "INT", pk: true, fk: "Clients(ClientID)", description: "Foreign Key" },
+        { name: "Rating", type: "INT", description: "Rating (1-5)" },
+        { name: "Review", type: "TEXT", description: "Client review" }
+      ]
+    }
+  ];
+
+  const sampleData = {
+    Tours: [
+      { TourID: 1, TourName: "Grand Etang & Waterfalls", ApproxLength: 4.5, Fee: 85.00 },
+      { TourID: 2, TourName: "Spice Plantation Tour", ApproxLength: 3.0, Fee: 65.00 },
+      { TourID: 3, TourName: "Island Highlights", ApproxLength: 6.0, Fee: 120.00 }
+    ],
+    Locations: [
+      { LocationID: 1, LocationName: "Grand Etang Lake", LocationType: "National Park", Address: "St. Andrew Parish", OfficialDescription: "Crater lake in rainforest" },
+      { LocationID: 2, LocationName: "Annandale Falls", LocationType: "Waterfall", Address: "St. George Parish", OfficialDescription: "30-foot waterfall with tropical garden" },
+      { LocationID: 3, LocationName: "Gouyave Nutmeg Station", LocationType: "Factory", Address: "Gouyave, St. John Parish", OfficialDescription: "Historic nutmeg processing facility" },
+      { LocationID: 4, LocationName: "Grand Anse Beach", LocationType: "Beach", Address: "St. George Parish", OfficialDescription: "Two-mile white sand beach" },
+      { LocationID: 5, LocationName: "Belmont Estate", LocationType: "Plantation", Address: "St. Patrick Parish", OfficialDescription: "17th century cocoa plantation" }
+    ],
+    Guides: [
+      { EmployeeID: 101, GuideName: "Marcus Baptiste", HomeAddress: "15 Church St, St. George's", DateOfHire: "2020-03-15" },
+      { EmployeeID: 102, GuideName: "Lisa Thomas", HomeAddress: "42 Main Rd, Gouyave", DateOfHire: "2019-07-22" },
+      { EmployeeID: 103, GuideName: "David Joseph", HomeAddress: "8 Hill View, Sauteurs", DateOfHire: "2021-01-10" }
+    ],
+    Clients: [
+      { ClientID: 1001, ClientName: "Sarah Johnson", Phone: "+1-473-555-0123", Email: "sarah.j@email.com" },
+      { ClientID: 1002, ClientName: "Michael Chen", Phone: "+1-473-555-0124", Email: "m.chen@email.com" },
+      { ClientID: 1003, ClientName: "Emma Williams", Phone: "+1-473-555-0125", Email: "emma.w@email.com" }
+    ]
+  };
+
+  const queries = [
+    {
+      title: "Tour Performance Report",
+      description: "Average ratings and revenue by tour",
+      sql: `SELECT 
+    t.TourName,
+    COUNT(DISTINCT o.OutingID) AS TotalOutings,
+    COUNT(oc.ClientID) AS TotalClients,
+    AVG(oc.Rating) AS AvgRating,
+    SUM(t.Fee) AS TotalRevenue
+FROM Tours t
+JOIN Outings o ON t.TourID = o.TourID
+JOIN OutingClients oc ON o.OutingID = oc.OutingID
+GROUP BY t.TourID, t.TourName
+ORDER BY TotalRevenue DESC;`
+    },
+    {
+      title: "Guide Performance & Appraisals",
+      description: "Guide statistics with average ratings",
+      sql: `SELECT 
+    g.EmployeeID,
+    g.GuideName,
+    COUNT(DISTINCT o.OutingID) AS OutingsLed,
+    COUNT(DISTINCT oc.ClientID) AS ClientsServed,
+    AVG(oc.Rating) AS AvgRating,
+    SUM(t.Fee) AS RevenueGenerated
+FROM Guides g
+JOIN Outings o ON g.EmployeeID = o.EmployeeID
+JOIN Tours t ON o.TourID = t.TourID
+JOIN OutingClients oc ON o.OutingID = oc.OutingID
+GROUP BY g.EmployeeID, g.GuideName
+ORDER BY AvgRating DESC, RevenueGenerated DESC;`
+    },
+    {
+      title: "Expiring Certifications",
+      description: "Certifications expiring in next 90 days",
+      sql: `SELECT 
+    g.GuideName,
+    l.LocationName,
+    c.ExpiryDate,
+    DATEDIFF(c.ExpiryDate, CURDATE()) AS DaysRemaining
+FROM Certifications c
+JOIN Guides g ON c.EmployeeID = g.EmployeeID
+JOIN Locations l ON c.LocationID = l.LocationID
+WHERE c.ExpiryDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 90 DAY)
+ORDER BY c.ExpiryDate;`
+    },
+    {
+      title: "Available Guides for Tour",
+      description: "Find guides certified for all locations in a tour",
+      sql: `SELECT DISTINCT g.EmployeeID, g.GuideName
+FROM Guides g
+WHERE NOT EXISTS (
+    SELECT tl.LocationID
+    FROM TourLocations tl
+    WHERE tl.TourID = 1  -- Replace with desired TourID
+    AND NOT EXISTS (
+        SELECT 1
+        FROM Certifications c
+        WHERE c.EmployeeID = g.EmployeeID
+        AND c.LocationID = tl.LocationID
+        AND c.ExpiryDate > CURDATE()
+    )
+);`
+    },
+    {
+      title: "Payroll Calculation",
+      description: "Calculate guide pay based on outings (assume $50 per outing)",
+      sql: `SELECT 
+    g.EmployeeID,
+    g.GuideName,
+    COUNT(o.OutingID) AS OutingsThisMonth,
+    COUNT(o.OutingID) * 50 AS MonthlyPay
+FROM Guides g
+LEFT JOIN Outings o ON g.EmployeeID = o.EmployeeID
+    AND MONTH(o.OutingDate) = MONTH(CURDATE())
+    AND YEAR(o.OutingDate) = YEAR(CURDATE())
+GROUP BY g.EmployeeID, g.GuideName
+ORDER BY MonthlyPay DESC;`
+    },
+    {
+      title: "Most Popular Locations",
+      description: "Locations ranked by tour inclusions and client visits",
+      sql: `SELECT 
+    l.LocationName,
+    l.LocationType,
+    COUNT(DISTINCT tl.TourID) AS ToursIncluded,
+    COUNT(DISTINCT oc.ClientID) AS TotalVisitors
+FROM Locations l
+JOIN TourLocations tl ON l.LocationID = tl.LocationID
+JOIN Outings o ON tl.TourID = o.TourID
+JOIN OutingClients oc ON o.OutingID = oc.OutingID
+GROUP BY l.LocationID, l.LocationName, l.LocationType
+ORDER BY TotalVisitors DESC;`
+    }
+  ];
+
+  const createTableSQL = `-- Create Tours Table
+CREATE TABLE Tours (
+    TourID INT PRIMARY KEY AUTO_INCREMENT,
+    TourName VARCHAR(100) NOT NULL,
+    ApproxLength DECIMAL(4,2) NOT NULL,
+    Fee DECIMAL(10,2) NOT NULL
+);
+
+-- Create Locations Table
+CREATE TABLE Locations (
+    LocationID INT PRIMARY KEY AUTO_INCREMENT,
+    LocationName VARCHAR(100) NOT NULL,
+    LocationType VARCHAR(50) NOT NULL,
+    Address VARCHAR(200),
+    OfficialDescription TEXT
+);
+
+-- Create Guides Table
+CREATE TABLE Guides (
+    EmployeeID INT PRIMARY KEY AUTO_INCREMENT,
+    GuideName VARCHAR(100) NOT NULL,
+    HomeAddress VARCHAR(200),
+    DateOfHire DATE NOT NULL
+);
+
+-- Create Clients Table
+CREATE TABLE Clients (
+    ClientID INT PRIMARY KEY AUTO_INCREMENT,
+    ClientName VARCHAR(100) NOT NULL,
+    Phone VARCHAR(20),
+    Email VARCHAR(100)
+);
+
+-- Create TourLocations Junction Table
+CREATE TABLE TourLocations (
+    TourID INT,
+    LocationID INT,
+    VisitOrder INT NOT NULL,
+    PRIMARY KEY (TourID, LocationID),
+    FOREIGN KEY (TourID) REFERENCES Tours(TourID) ON DELETE CASCADE,
+    FOREIGN KEY (LocationID) REFERENCES Locations(LocationID) ON DELETE CASCADE
+);
+
+-- Create Certifications Table
+CREATE TABLE Certifications (
+    EmployeeID INT,
+    LocationID INT,
+    CertificationDate DATE NOT NULL,
+    ExpiryDate DATE NOT NULL,
+    PRIMARY KEY (EmployeeID, LocationID),
+    FOREIGN KEY (EmployeeID) REFERENCES Guides(EmployeeID) ON DELETE CASCADE,
+    FOREIGN KEY (LocationID) REFERENCES Locations(LocationID) ON DELETE CASCADE
+);
+
+-- Create Outings Table
+CREATE TABLE Outings (
+    OutingID INT PRIMARY KEY AUTO_INCREMENT,
+    TourID INT NOT NULL,
+    EmployeeID INT NOT NULL,
+    OutingDate DATE NOT NULL,
+    OutingTime TIME NOT NULL,
+    FOREIGN KEY (TourID) REFERENCES Tours(TourID),
+    FOREIGN KEY (EmployeeID) REFERENCES Guides(EmployeeID)
+);
+
+-- Create OutingClients Junction Table
+CREATE TABLE OutingClients (
+    OutingID INT,
+    ClientID INT,
+    Rating INT CHECK (Rating BETWEEN 1 AND 5),
+    Review TEXT,
+    PRIMARY KEY (OutingID, ClientID),
+    FOREIGN KEY (OutingID) REFERENCES Outings(OutingID) ON DELETE CASCADE,
+    FOREIGN KEY (ClientID) REFERENCES Clients(ClientID) ON DELETE CASCADE
+);`;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Database className="w-10 h-10 text-green-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">Spice Isle Tours</h1>
+              <p className="text-gray-600">Database Design & Information System</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="border-b border-gray-200">
+            <div className="flex overflow-x-auto">
+              {['normalization', 'erd', 'tables', 'data', 'queries', 'sql'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-4 font-semibold whitespace-nowrap ${
+                    activeTab === tab
+                      ? 'bg-green-600 text-white border-b-4 border-green-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6">
+            {activeTab === 'normalization' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Database Normalization</h2>
+                {Object.entries(normalizationSteps).map(([key, value]) => (
+                  <div key={key} className="mb-6 border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleSection(key)}
+                      className="w-full bg-green-100 p-4 flex items-center justify-between hover:bg-green-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        {expandedSections[key] ? <ChevronDown /> : <ChevronRight />}
+                        <h3 className="text-xl font-semibold">{value.title}</h3>
+                      </div>
+                    </button>
+                    {expandedSections[key] && (
+                      <div className="p-4 bg-white">
+                        <p className="text-gray-600 mb-3">{value.description}</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {value.tables.map((table, idx) => (
+                            <li key={idx} className="text-gray-700 font-mono text-sm">{table}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'erd' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Entity Relationship Diagram</h2>
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <pre className="text-sm overflow-x-auto">
+{`
+┌─────────────────┐         ┌──────────────────┐
+│     TOURS       │         │    LOCATIONS     │
+├─────────────────┤         ├──────────────────┤
+│ PK: TourID      │         │ PK: LocationID   │
+│    TourName     │         │    LocationName  │
+│    ApproxLength │         │    LocationType  │
+│    Fee          │         │    Address       │
+└────────┬────────┘         │    OfficialDesc  │
+         │                  └─────────┬────────┘
+         │                            │
+         │    ┌──────────────────┐    │
+         └────┤  TOURLOCATIONS   ├────┘
+              ├──────────────────┤
+              │ PK,FK: TourID    │
+              │ PK,FK: LocationID│
+              │    VisitOrder    │
+              └──────────────────┘
+
+┌─────────────────┐         ┌──────────────────┐
+│     GUIDES      │         │   CERTIFICATIONS │
+├─────────────────┤         ├──────────────────┤
+│ PK: EmployeeID  │────────┤│ PK,FK: EmployeeID│
+│    GuideName    │         │ PK,FK: LocationID├────┐
+│    HomeAddress  │         │    CertDate      │    │
+│    DateOfHire   │         │    ExpiryDate    │    │
+└────────┬────────┘         └──────────────────┘    │
+         │                                           │
+         │                  ┌──────────────────┐    │
+         │                  │    LOCATIONS     │◄───┘
+         │                  └──────────────────┘
+         │
+         │    ┌──────────────────┐
+         └────┤    OUTINGS       │
+              ├──────────────────┤
+              │ PK: OutingID     │
+              │ FK: TourID       │◄─────────┐
+              │ FK: EmployeeID   │          │
+              │    OutingDate    │          │
+              │    OutingTime    │          │
+              └────────┬─────────┘          │
+                       │                    │
+                       │                    │
+         ┌─────────────┴─────┐         ┌────────────┐
+         │  OUTINGCLIENTS    │         │   TOURS    │
+         ├───────────────────┤         └────────────┘
+         │ PK,FK: OutingID   │
+         │ PK,FK: ClientID   ├────┐
+         │    Rating         │    │
+         │    Review         │    │
+         └───────────────────┘    │
+                                  │
+                           ┌──────┴────────┐
+                           │    CLIENTS    │
+                           ├───────────────┤
+                           │ PK: ClientID  │
+                           │    ClientName │
+                           │    Phone      │
+                           │    Email      │
+                           └───────────────┘
+
+Relationships:
+• Tours ──< TourLocations >── Locations (Many-to-Many)
+• Guides ──< Certifications >── Locations (Many-to-Many)
+• Tours ──< Outings (One-to-Many)
+• Guides ──< Outings (One-to-Many)
+• Outings ──< OutingClients >── Clients (Many-to-Many)
+`}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'tables' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Database Tables</h2>
+                {tables.map((table) => (
+                  <div key={table.name} className="mb-6 border rounded-lg overflow-hidden">
+                    <div className="bg-green-600 text-white p-3 flex items-center gap-2">
+                      <Table className="w-5 h-5" />
+                      <h3 className="text-lg font-semibold">{table.name}</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-4 py-2 text-left">Column Name</th>
+                            <th className="px-4 py-2 text-left">Data Type</th>
+                            <th className="px-4 py-2 text-left">Constraints</th>
+                            <th className="px-4 py-2 text-left">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {table.columns.map((col, idx) => (
+                            <tr key={idx} className="border-t">
+                              <td className="px-4 py-2 font-mono text-sm">{col.name}</td>
+                              <td className="px-4 py-2 font-mono text-sm text-blue-600">{col.type}</td>
+                              <td className="px-4 py-2 text-sm">
+                                {col.pk && <span className="bg-yellow-200 px-2 py-1 rounded text-xs mr-1">PK</span>}
+                                {col.fk && <span className="bg-blue-200 px-2 py-1 rounded text-xs">{col.fk}</span>}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-600">{col.description}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'data' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Sample Data</h2>
+                {Object.entries(sampleData).map(([tableName, data]) => (
+                  <div key={tableName} className="mb-6 border rounded-lg overflow-hidden">
+                    <div className="bg-blue-600 text-white p-3">
+                      <h3 className="text-lg font-semibold">{tableName}</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            {Object.keys(data[0]).map((key) => (
+                              <th key={key} className="px-4 py-2 text-left font-semibold">{key}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.map((row, idx) => (
+                            <tr key={idx} className="border-t hover:bg-gray-50">
+                              {Object.values(row).map((val, i) => (
+                                <td key={i} className="px-4 py-2">{val}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'queries' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">SQL Queries</h2>
+                {queries.map((query, idx) => (
+                  <div key={idx} className="mb-6 border rounded-lg overflow-hidden">
+                    <div className="bg-purple-600 text-white p-3">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Search className="w-5 h-5" />
+                        {query.title}
+                      </h3>
+                      <p className="text-sm mt-1 text-purple-100">{query.description}</p>
+                    </div>
+                    <div className="bg-gray-900 text-green-400 p-4 overflow-x-auto">
+                      <pre className="text-sm">{query.sql}</pre>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'sql' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Complete SQL Schema</h2>
+                <div className="bg-gray-900 text-green-400 p-6 rounded-lg overflow-x-auto">
+                  <pre className="text-sm">{createTableSQL}</pre>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-3 text-gray-800">Key Features Implemented</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-green-50 p-4 rounded">
+              <h3 className="font-semibold text-green-800 mb-2">Payroll System</h3>
+              <p className="text-sm text-gray-700">Track guide outings and calculate monthly compensation</p>
+            </div>
+            <div className="bg-blue-50 p-4 rounded">
+              <h3 className="font-semibold text-blue-800 mb-2">Tour Performance</h3>
+              <p className="text-sm text-gray-700">Analyze tour popularity, revenue, and client satisfaction</p>
+            </div>
+            <div className="bg-purple-50 p-4 rounded">
+              <h3 className="font-semibold text-purple-800 mb-2">Employee Appraisals</h3>
+              <p className="text-sm text-gray-700">Monitor guide ratings, performance metrics, and certifications</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SpiceIsleToursDB;
