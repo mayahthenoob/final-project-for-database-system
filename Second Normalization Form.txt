@@ -1,0 +1,7 @@
+Remove partial dependencies (all non-key attributes fully dependent on primary key)
+
+All tables from 1NF satisfy 2NF
+Added junction tables for many-to-many relationships:
+TourLocations (TourID, LocationID, VisitOrder)
+Certifications (EmployeeID, LocationID, CertificationDate, ExpiryDate)
+OutingClients (OutingID, ClientID, Rating, Review)

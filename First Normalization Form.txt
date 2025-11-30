@@ -1,0 +1,7 @@
+Eliminate repeating groups and ensure atomic values
+
+Tours (TourID, TourName, Length, Fee)
+Locations (LocationID, Name, Type, Address, Description)
+Guides (EmployeeID, Name, Address, DateOfHire)
+Clients (ClientID, Name, Phone, Email)
+Outings (OutingID, Date, Time)
